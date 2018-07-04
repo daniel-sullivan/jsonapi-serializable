@@ -1,5 +1,3 @@
-require 'jsonapi/serializable/resource_builder'
-
 require 'jsonapi/serializable/resource/dsl'
 
 require 'jsonapi/serializable/link'
@@ -18,9 +16,7 @@ module JSONAPI
 
       # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
       def initialize(exposures = {})
-        @_exposures = {
-          _resource_builder: JSONAPI::Serializable::ResourceBuilder.new
-        }.merge(exposures)
+        @_exposures = exposures
         @_exposures.each { |k, v| instance_variable_set("@#{k}", v) }
 
         @_id = instance_eval(&self.class.id_block).to_s
@@ -79,6 +75,12 @@ module JSONAPI
         @_relationships
           .select { |k, _| include.include?(k) }
           .each_with_object({}) { |(k, v), h| h[k] = v.related_resources }
+      end
+
+      def jsonapi_cache_key(options)
+        "#{jsonapi_type} - #{jsonapi_id}" \
+        "- #{options[:include].to_a.sort}" \
+        "- #{(options[:fields] || Set.new).to_a.sort}"
       end
 
       private
